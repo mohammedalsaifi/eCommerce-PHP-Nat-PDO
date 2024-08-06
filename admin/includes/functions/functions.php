@@ -1,5 +1,14 @@
 <?php
 
+function getAllForm($feild, $table, $where = NULL, $AND = NULL, $orderfield = NULL, $ordering = "DESC")
+{
+    global $conn;
+    $getAll = $conn->prepare("SELECT $feild FROM $table $where $AND ORDER BY $orderfield $ordering");
+    $getAll->execute();
+    $row = $getAll->fetchAll();
+    return $row;
+}
+
 function getTitle()
 {
     global $pageTitle;
@@ -47,7 +56,7 @@ function getLatest($column, $table, $order, $limit = 5)
 {
     global $conn;
 
-    $stmt2 = $conn->prepare("SELECT $column FROM $table ORDER BY $order DESC LIMIT $limit");
+    $stmt2 = $conn->prepare("SELECT $column FROM $table ORDER BY $order DESC LIMIT $limit;");
     $stmt2->execute();
     $rows = $stmt2->fetchAll();
 

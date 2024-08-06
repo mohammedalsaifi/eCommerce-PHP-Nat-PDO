@@ -29,18 +29,21 @@
                     <li class="nav-item">
                         <a class="nav-link" href="logs.php"><?php echo lang("LOGS") ?></a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.php">Visit Shop</a>
+                    </li>
                 </ul>
             </div>
     </div>
         <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-target="#app-nav" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-            <span class=""><?php echo $_SESSION["username"] ?></span>
+            <span class=""><?php echo "User: " . $_SESSION["username"]; ?></span>
         </button>
         <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
 
             <div class="offcanvas-body" id="app-nav">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                     <li class="nav-item">
-                        <a class="nav-link" href="members.php?do=Edit&userid=<?php echo $_SESSION['ID'] ?>">Edit Profile</a>
+                        <a class="nav-link" href="members.php?do=Edit&userid=<?php echo $_SESSION['ID']; ?>">Edit Profile</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">Setting</a>

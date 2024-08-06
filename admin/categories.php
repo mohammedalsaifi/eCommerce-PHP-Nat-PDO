@@ -17,7 +17,7 @@ if (isset($_SESSION['username'])) {
         if (isset($_GET['sort']) && in_array($_GET['sort'], $sort_array)) {
             $sort = $_GET['sort'];
         }
-        $stmt2 = $conn->prepare("SELECT * FROM categories ORDER BY Visibility $sort");
+        $stmt2 = $conn->prepare("SELECT * FROM categories WHERE parent = 0 ORDER BY Visibility $sort");
         $stmt2->execute();
         $cats = $stmt2->fetchAll(); ?>
 
@@ -29,9 +29,9 @@ if (isset($_SESSION['username'])) {
             <br>
             <br>
             <?php
-            foreach ($cats as $cat) { ?>
-                <div class="card-group">
-
+            ?>
+            <div class="card-group">
+                <?php foreach ($cats as $cat) { ?>
                     <div class="card">
                         <div class="card-body">
                             <a href='categories.php?do=Edit&catid=<?php echo $cat['ID'] ?>' class='btn btn-secondary'><i class="fa-solid fa-trash"> Edit</i></a>
@@ -43,11 +43,20 @@ if (isset($_SESSION['username'])) {
                                 <p class="card-text"><small><?php echo "Visibility Is: " . $cat['Visibility']; ?></small></p>
                                 <p class="card-text"><small><?php echo "Allow_Comment Is: " . $cat['Allow_Comment']; ?></p>
                                 <p class="card-text"><small><?php echo "Allow_Ads Is: " . $cat['Allow_Ads']; ?></p>
+                                <?php
+                                $getCats = getAllForm("*", "categories", "WHERE parent = {$cat['ID']}", "", "ID", "ASC");
+                                foreach ($getCats as $cat) {
+                                    echo '<a href="categories.php?do=Edit&catid=' . $cat['ID'] . '"' . 'class=btn btn-danger>' . $cat['Name'] . '</a>';
+                                }
+                                ?>
                             </div>
                         </div>
                     </div>
-                </div>
-            <?php   } ?>
+                <?php
+                }
+                ?>
+            </div>
+
             <br>
             <a href="?do=Add"><button class="btn btn-primary"><i class="fa fa-plus"> Add Category</i></button></a>
             <br>
@@ -69,6 +78,18 @@ if (isset($_SESSION['username'])) {
                 <div class=" form-group mb-3">
                     <label for="exampleInputPassword1" class="form-label">Ordering</label>
                     <input type="text" name="ordering" class="form-control">
+                </div>
+                <div class=" form-group mb-3">
+                    <label for="exampleInputPassword1" class="form-label">Parent</label>
+                    <select name="parent">
+                        <option class="form-control" value="0">None</option>
+                        <?php
+                        $getCats = getAllForm("*", "categories", "WHERE parent = 0", "", "ID", "ASC");
+                        foreach ($getCats as $cat) {
+                            echo '<option class="form-control" value="' . $cat['ID'] . '">' . $cat['Name'] . '</option>';
+                        }
+                        ?>
+                    </select>
                 </div>
                 <div class="form-group mb-3">
                     <label for="exampleInputPassword1" class="form-label">Visible</label>
@@ -104,7 +125,7 @@ if (isset($_SESSION['username'])) {
                     </div>
                 </div>
                 <div class="form-group mb-3">
-                    <input type="submit" value="Save" class="btn btn-primary">
+                    <input type="submit" value="Add Category" class="btn btn-primary">
                 </div>
             </form>
         </div>
@@ -117,6 +138,7 @@ if (isset($_SESSION['username'])) {
             $name = $_POST['name'];
             $desc = $_POST['description'];
             $order = $_POST['ordering'];
+            $parent = $_POST['parent'];
             $visibl = $_POST['visibility'];
             $comment = $_POST['commenting'];
             $ads = $_POST['ads'];
@@ -127,19 +149,21 @@ if (isset($_SESSION['username'])) {
                 redirectHome($Msg, 'back');
             } else {
                 if (empty($errorForm)) {
-                    $stmt = $conn->prepare("INSERT INTO categories (Name, Description, Ordering, Visibility, Allow_Comment, Allow_Ads) 
-                        Values(:zname, :zdesc, :zorder, :zvisibel, :zcomm, :zads);");
+                    $stmt = $conn->prepare("INSERT INTO 
+                        categories(Name, Description, Ordering, parent, Visibility, Allow_Comment, Allow_Ads) 
+                        Values(:zname, :zdesc, :zorder, :zparent, :zvisibel, :zcomm, :zads);");
                     $stmt->execute(array(
                         'zname' => $name,
                         'zdesc' => $desc,
                         'zorder' => $order,
+                        'zparent' => $parent,
                         'zvisibel' => $visibl,
                         'zcomm' => $comment,
                         'zads' => $ads,
                     ));
                     echo "<div class='container'>";
                     $Msg = '<div class="alert alert-success text-center"> ' . $stmt->rowCount() . '<storng> Field Inserted</storng></div>';
-                    redirectHome($Msg, 'back');
+                    redirectHome($Msg);
                     echo "</div>";
                 }
             }
@@ -170,9 +194,25 @@ if (isset($_SESSION['username'])) {
                         <label for="exampleInputPassword1" class="form-label">Description</label>
                         <input type="text" name="description" class="form-control" value="<?php echo $cat['Description'] ?>">
                     </div>
-                    <div class=" form-group mb-3">
+                    <div class="form-group mb-3">
+                        <label for="exampleInputPassword1" class="form-label">Parent - <?php echo $cat['Parent']; ?>ccccccc</label>
+                        <select name="parent">
+                            <option class="form-control" value="0">None</option>
+                            <?php
+                            $getCats = getAllForm("*", "categories", "WHERE parent = 0", "", "ID", "ASC");
+                            foreach ($getCats as $c) {
+                                echo '<option class="form-control" value="' . $c['ID'] . '"';
+                                if ($cat['Parent'] == $c['ID']) {
+                                    echo 'selected';
+                                }
+                                echo '>' . $c['Name'] . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
                         <label for="exampleInputPassword1" class="form-label">Ordering</label>
-                        <input type="text" name="ordering" class="form-control" value="<?php echo $cat['Ordering'] ?>">
+                        <input type="text" name="ordering" class="form-control" value="<?php echo $cat['Ordering']; ?>">
                     </div>
                     <div class="form-group mb-3">
                         <label for="exampleInputPassword1" class="form-label">Visible</label>
@@ -259,7 +299,7 @@ if (isset($_SESSION['username'])) {
         } else {
             echo "<div class='container'>";
             $Msg = '<div class="alert alert-danger">Sorry You Can Not Browse This Page Directly</div>';
-            redirectHome($Msg);
+            redirectHome($Msg, "back");
             echo "</div>";
         }
         echo "</div>";

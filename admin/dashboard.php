@@ -37,7 +37,7 @@ if (isset($_SESSION['username'])) {
             <div class="col-md-3 border text-center">
                 <div class="state">
                     Total Comments
-                    <span>3500</span>
+                    <span><a href="comments.php"><?php echo countItems("C_ID", "comments"); ?></a></span>
                 </div>
             </div>
             <div class="latest">

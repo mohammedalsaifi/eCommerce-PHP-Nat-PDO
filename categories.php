@@ -1,17 +1,21 @@
 <?php
+ob_start();
 session_start();
-$pageTitle = 'Homepage';
+$pageTitle = 'Categories';
 include "init.php";
+?>
 
-?>
-<?php
-$items = getAll('items');
-?>
 <div class="container">
+    <h1 class="text-center">
+        Show Category
+    </h1>
+    <br>
     <div class="row row-cols-1 row-cols-md-3 g-4">
-        <?php foreach ($items as $item) { ?>
-            <div class="col">
-                <div class="card">
+        <?php
+        foreach (getItems('Cat_ID', $_GET['pageid']) as $item) {
+        ?>
+            <div class="row col-md-4">
+                <div class="card" style="width: 18rem;">
                     <img src="..." class="card-img-top" alt="...">
                     <div class="card-body">
                         <a href="items.php?itemid=<?php echo $item['Item_ID']; ?>">
@@ -32,6 +36,7 @@ $items = getAll('items');
         ?>
     </div>
 </div>
+
 <?php
 include $tpl . 'footer.php';
-?>
+ob_end_flush();

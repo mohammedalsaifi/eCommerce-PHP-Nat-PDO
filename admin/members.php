@@ -15,7 +15,7 @@ if (isset($_SESSION['username'])) {
             $query = 'AND RegStatus = 0';
         }
 
-        $stmt = $conn->prepare("SELECT * FROM users WHERE GroupID != 1 $query ORDER BY UserID ASC;");
+        $stmt = $conn->prepare("SELECT * FROM users WHERE GroupID != 1 ORDER BY UserID ASC;");
         $stmt->execute();
         $rows = $stmt->fetchAll();
 
@@ -28,6 +28,7 @@ if (isset($_SESSION['username'])) {
                     <table class="main-table text-center table table-dark table-hover border">
                         <tr>
                             <td>#ID</td>
+                            <td>Avatar</td>
                             <td>Username</td>
                             <td>Email</td>
                             <td>Full Name</td>
@@ -37,6 +38,13 @@ if (isset($_SESSION['username'])) {
                         <?php foreach ($rows as $row) {
                             echo "<tr>";
                             echo "<td>" . $row['UserID'] . "</td>";
+                            echo "<td>";
+                            if (empty($row['Avatar'])) {
+                                echo 'No Image';
+                            } else {
+                                echo '<img style="width:30px;" src="uploads/avatars/' . $row['Avatar'] . '"' . 'alt="..." class="img-thumbnail">';
+                            }
+                            $row['Avatar'] . "</td>";
                             echo "<td>" . $row['Username'] . "</td>";
                             echo "<td>" . $row['Email'] . "</td>";
                             echo "<td>" . $row['FullName'] . "</td>";
@@ -58,10 +66,10 @@ if (isset($_SESSION['username'])) {
     } else if ($do == 'Add') { ?>
         <h1 class="text-center">Add Member</h1>
         <div class="container">
-            <form class="edit-form" action="?do=Insert" method="POST">
+            <form class="edit-form" action="?do=Insert" method="POST" enctype="multipart/form-data">
                 <div class="form-group mb-3">
                     <label for="exampleInputEmail1" class="form-label">Username</label>
-                    <input type="text" class="form-control" name="username" aria-describedby="emailHelp" autocomplete="off" required="required">
+                    <input type="text" class="form-control" name="username" aria-describedby="emailHelp" required="required">
                     <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
                 </div>
                 <div class="form-group mb-3">
@@ -77,15 +85,29 @@ if (isset($_SESSION['username'])) {
                     <input type="text" name="full" class="form-control">
                 </div>
                 <div class="form-group mb-3">
+                    <label for="exampleInputPassword1" class="form-label">Avatar</label>
+                    <input type="file" name="avatar" class="form-control">
+                </div>
+                <div class="form-group mb-3">
                     <input type="submit" value="Save" class="btn btn-primary">
                 </div>
             </form>
         </div>
-
-        <?php } else if ($do == 'Insert') {
+        <?php
+    } else if ($do == 'Insert') {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             echo "<h1 class='text-center'>Insert Member</h1>";
             echo '<div class="container">';
+
+            $avatarName = $_FILES['avatar']['name'];
+            $avatarSize = $_FILES['avatar']['size'];
+            $avatarTmp  = $_FILES['avatar']['tmp_name'];
+            $avatarType = $_FILES['avatar']['type'];
+
+            $avatarAllowedExtension = array("jpeg", "jpg", "png", "gif");
+
+            $endExtension = explode('.', $avatarName);
+            $avatarExtension = strtolower(end($endExtension));
 
             $username = $_POST['username'];
             $pass = $_POST['password'];
@@ -108,26 +130,38 @@ if (isset($_SESSION['username'])) {
             if (empty($full)) {
                 $errorForm[] = '<div class = " alert alert-danger text-center">Full Name Can Not Be be Empty!</div>';
             }
+            if (!empty($avatarName) && !in_array($avatarExtension, $avatarAllowedExtension)) {
+                $errorForm[] = '<div class = " alert alert-danger text-center">This Extension Is Not Allowed!</div>';
+            }
+            if (empty($avatarName)) {
+                $errorForm[] = '<div class = " alert alert-danger text-center">Avatar Can Not Be be Empty!</div>';
+            }
+            if ($avatarSize > 4194304) {
+                $errorForm[] = '<div class = " alert alert-danger text-center">Avatar Can Not Be be Bigger Than 4MB!</div>';
+            }
             foreach ($errorForm as $error) {
                 echo $error . "</br>";
             }
-            $check = checkItem('Username', "users", $username);
-            if ($check > 0) {
-                redirectHome("Sorry! Username Is Taken");
-            } else {
-                if (empty($errorForm)) {
-                    $stmt = $conn->prepare("INSERT INTO users (Username, Password, Email, FullName, RegStatus, Date) Values(:zunam, :zpass, :zemail, :zname, 1, now());");
-                    $stmt->execute(array(
-                        'zunam' => $username,
-                        'zpass' => $hashedPass,
-                        'zemail' => $email,
-                        'zname' => $full,
-                    ));
-                    echo "<div class='container'>";
-                    $Msg = '<div class="alert alert-success text-center"> ' . $stmt->rowCount() . '<storng> Field Inserted</storng></div>';
-                    redirectHome($Msg, 'back');
-                    echo "</div>";
+            if (empty($errorForm)) {
+                $avatar = rand(0, 100000) . '_' . $avatarName;
+                move_uploaded_file($avatarTmp, "uploads\avatars\\" . $avatar);
+                $check = checkItem('Username', "users", $username);
+                if ($check > 0) {
+                    $Msg = '<div class="alert alert-success text-center"><storng>Sorry! Username Is Taken</storng></div>';
+                    redirectHome($Msg);
                 }
+                $stmt = $conn->prepare("INSERT INTO users (Username, Password, Email, FullName, RegStatus, Date, Avatar) Values(:zunam, :zpass, :zemail, :zname, 1, now(), :zavatar);");
+                $stmt->execute(array(
+                    'zunam' => $username,
+                    'zpass' => $hashedPass,
+                    'zemail' => $email,
+                    'zname' => $full,
+                    'zavatar' => $avatar,
+                ));
+                echo "<div class='container'>";
+                $Msg = '<div class="alert alert-success text-center"><storng>1 Field Inserted</storng></div>';
+                redirectHome($Msg);
+                echo "</div>";
             }
         } else {
             echo "<div class='container'>";
@@ -238,14 +272,14 @@ if (isset($_SESSION['username'])) {
     } else if ($do == 'Activate') {
 
         $userid = isset($_GET['userid']) && is_numeric($_GET['userid']) ? intval($_GET['userid']) : 0;
-        $check = checkItem('userid', 'users', $userid);
+        $check = checkItem('UserID', 'users', $userid);
 
         if ($check > 0) {
             $stmt = $conn->prepare("UPDATE users SET RegStatus = 1 WHERE UserID = ?;");
             $stmt->execute(array($userid));
             echo "<div class='container'>";
             $Msg = '<div class="alert alert-success text-center"><storng>Field Activated</storng></div>';
-            redirectHome($Msg);
+            redirectHome($Msg, 'back');
             echo "</div>";
         }
         include $tpl . 'footer.php';

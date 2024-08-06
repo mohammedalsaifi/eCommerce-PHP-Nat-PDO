@@ -11,18 +11,24 @@ if (isset($_SESSION['username'])) {
 
         $query = '';
 
-        $stmt = $conn->prepare("SELECT 
-                                    comments.*, items.Name AS Item_Name, users.Username AS User 
-                                FROM 
+        $stmt = $conn->prepare("SELECT
+                                    comments.*,
+                                    items.Name AS Item_Name,
+                                    users.Username AS User
+                                FROM
                                     comments
                                 INNER JOIN
                                     items
                                 ON
-                                    items.Item_ID = comments.Item_ID
+                                    items.Item_ID
+                                    =
+                                    comments.Item_ID
                                 INNER JOIN
                                     users
                                 ON
-                                    users.UserID = comments.User_ID;");
+                                    users.UserID
+                                    =
+                                    comments.User_ID;");
         $stmt->execute();
         $rows = $stmt->fetchAll();
 
